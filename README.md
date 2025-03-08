@@ -93,6 +93,46 @@ graph TD;
     Generated-Response-converted-into-standard-document-->Results
 ```
 
+# Perplexa Research
+
+Perplexa Research Mode is an interactive research environment designed to streamline the process of fetching, processing, and querying academic content via [arxiv.org](http://arxiv.org/), it offers a modular, interactive, and highly extensible pipeline that leverages the latest advances in AI and Large Language Models (LLMs) to bring academic content to life.
+
+## Perplexa Research Architectural Overview
+1. **Data Ingestion via arXiv**
+- **Purpose:** Retrieve academic papers and research content from the arXiv repository.
+- **How It Works:**
+  - The notebook leverages the [arxiv](https://pypi.org/project/arxiv/) package to search and download metadata and content of research papers.
+  - This component acts as the data source for the entire pipeline, feeding raw text data into subsequent modules.
+
+2. **Indexing and Embedding with Llama Index Framework**
+- **Purpose:** Convert raw research documents into queryable data structures.
+- **How It Works:**
+  - Index Creation:
+    - Uses the Llama Index framework to build indices from ingested research content.
+    - These indices facilitate fast retrieval of relevant information when responding to queries.
+  - Embedding Generation:
+    - Extensions like llama-index-llms-mistralai and llama-index-embeddings-mistralai are employed to generate vector embeddings for document sections.
+    - This enables the system to perform semantic similarity searches and contextual matching based on natural language queries.
+
+3. **Query Processing and LLM Integration using [Mistral API](https://docs.mistral.ai/api/)**
+- **Purpose:** Allow users to query the indexed research data in natural language.
+- **How It Works:**
+  - Agent-Based Querying:
+    - The notebook sets up an agent layer that leverages LLMs to interpret and respond to user queries.
+    - The integration with various LLM backends (*Mistralai* via dedicated modules) ensures that responses are generated with up-to-date language understanding.
+  - Data Fusion:
+    - By combining indexed data with live LLM processing, the system produces answers that are both contextually informed and semantically rich.
+
+4. **Interactive UI with Gradio**
+- **Purpose:** Provide an accessible, web-based interface for exploring research queries.
+- **How It Works:**
+  - Interface Building:
+    - Using Gradio (version 3.39.0), the notebook launches a simple web interface.
+    - Users can type in queries and view results in real time.
+  - User Experience:
+    - The UI is designed to be intuitive, lowering the barrier for end users to interact with the model.
+
+
 ## Future Improvements
 
 - Add support for more search engines
