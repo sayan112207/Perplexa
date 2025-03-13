@@ -5,7 +5,8 @@ import requests
 import numpy as np
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
-from serpapi import GoogleSearch
+#from serpapi import GoogleSearch
+from serpapi.google_search import GoogleSearch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import cohere
