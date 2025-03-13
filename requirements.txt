@@ -1,4 +1,3 @@
-json
 streamlit
 requests
 numpy
