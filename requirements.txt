@@ -1,7 +1,7 @@
 streamlit
 requests
-numpy
 python-dotenv
+numpy
 beautifulsoup4
 serpapi
 google-search-results
