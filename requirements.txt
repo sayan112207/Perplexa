@@ -1,0 +1,13 @@
+os
+json
+streamlit
+requests
+numpy
+python-dotenv
+beautifulsoup4
+serpapi
+google-search-results
+sentence-transformers
+scikit-learn
+cohere
+openai
