@@ -3,8 +3,8 @@ requests
 python-dotenv
 numpy
 beautifulsoup4
-serpapi
 google-search-results
+serpapi
 sentence-transformers
 scikit-learn
 cohere
