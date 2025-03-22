@@ -12,6 +12,10 @@ import cohere
 from openai import OpenAI
 from PIL import Image
 
+#Fixing: RuntimeError: Tried to instantiate class '__path__._path', but it does not exist! Ensure that it is registered via torch::class_
+import torch
+torch.classes.__path__ = []
+
 # -----------------
 # Helper function for rerunning the app (Sayan's part)
 # Ye code app ko rerun karne ke liye hai.
