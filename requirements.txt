@@ -1,4 +1,5 @@
-streamlit
+Authlib==1.5.1
+streamlit==1.43.2
 requests
 python-dotenv
 numpy
