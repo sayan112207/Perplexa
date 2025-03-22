@@ -32,7 +32,10 @@ def rerun():
 # Page Config (Sayan's part)
 # Ye code page configuration set karta hai.
 # -----------------
-st.set_page_config(page_title="Perplexa Chat", layout="wide")
+st.set_page_config(page_title="Perplexa Chat", 
+                   layout="wide", 
+                   page_icon="https://github.com/sayan112207/Perplexa/blob/main/perplexa_logo.png?raw=true")
+
 
 # -----------------
 # Header with Logo and Title in Columns (Patel's work)
