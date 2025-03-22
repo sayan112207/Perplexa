@@ -39,7 +39,7 @@ st.set_page_config(page_title="Perplexa Chat", layout="wide")
 # Ye header design karta hai aur logo aur title ko aligned rakhta hai.
 # -----------------
 try:
-    logo = Image.open("https://github.com/sayan112207/Perplexa/blob/main/perplexa%20logo.svg")
+    logo = Image.open("perplexa_logo.png")
 except FileNotFoundError:
     logo = None
 
