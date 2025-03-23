@@ -11,7 +11,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import cohere
 from openai import OpenAI
 from PIL import Image
-
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 #Fixing: RuntimeError: Tried to instantiate class '__path__._path', but it does not exist! Ensure that it is registered via torch::class_
 import torch
 torch.classes.__path__ = []
