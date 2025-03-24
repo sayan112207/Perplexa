@@ -66,10 +66,19 @@ with header_col2:
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")  # Store your MongoDB URI in .env
-client = MongoClient(MONGO_URI)
-db = client["perplexa_chat"]  # Database name
-users_collection = db["users"]  # User details collection
-chats_collection = db["chats"]
+try:
+    client = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
+    # db = client.test  # Test the connection
+    db = client.get_database("perplexa_chat")  # Specify your database name
+    print("Connected Successfully!")
+except Exception as e:
+    print("Connection failed:", e)
+
+if db is not None:
+    users_collection = db["users"]
+    chats_collection = db["chats"]
+else:
+    print("Database connection failed. Cannot proceed.")
 
 # Function to save a new user
 def save_user_to_mongo(user):
