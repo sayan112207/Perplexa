@@ -20,6 +20,9 @@ A smart web-searching AI with Retrieval Augmented Generation (RAG) system that p
 - **JSON**: Data format for structured information exchange
 - **Threading**: Concurrent operations for improved performance
 
+## DataBase Used
+- Mongo DB
+  
 ## How It Works
 
 1. **Query Processing**: Analyzes the user question to extract optimal search keywords
