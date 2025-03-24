@@ -10,3 +10,6 @@ sentence-transformers
 scikit-learn
 cohere
 openai
+PIL
+pymongo
+bson
