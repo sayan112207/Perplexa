@@ -59,7 +59,34 @@ with header_col2:
         </h1>
         """,
         unsafe_allow_html=True
-    )
+)
+# -----------------
+# DataBase Setup and Functions Part (Satya's part)
+# -----------------
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI")  # Store your MongoDB URI in .env
+client = MongoClient(MONGO_URI)
+db = client["perplexa_chat"]  # Database name
+users_collection = db["users"]  # User details collection
+chats_collection = db["chats"]
+
+# Function to save a new user
+def save_user_to_mongo(user):
+    users_collection.update_one({"email": user["email"]}, {"$set": user}, upsert=True)
+    
+# Function to fetch all user chats
+def load_chats_from_mongo(user_email):
+    return list(chats_collection.find({"email": user_email}))
+
+# Function to save a new chat
+def save_chat_to_mongo(user_email, chat_title, messages):
+    chat_data = {"email": user_email, "title": chat_title, "messages": messages}
+    chats_collection.insert_one(chat_data)
+
+# Function to delete a specific chat
+def delete_chat_from_mongo(chat_id):
+    chats_collection.delete_one({"_id": ObjectId(chat_id)})
 
 # -----------------
 # Authentication (Sayan's part)
@@ -73,13 +100,17 @@ def authenticate_user():
             st.login("auth0")
         st.warning("Please log in to access the chat.")
         st.stop()
-    return {
+    user_data =  {
         "name": user.name,
         "email": user.email if getattr(user, "email", None) else "No Email",
         "picture": user.picture if getattr(user, "picture", None) else None
     }
+    save_user_to_mongo(user)
+    return user_data
 
 user = authenticate_user()
+
+user_email = user["email"]
 
 # -----------------
 # Initialize Messages (Sayan's part)
@@ -128,13 +159,19 @@ if st.sidebar.button("🤓 Geek Mode", key="reason_btn", help="Toggle Geek Mode"
 
 # -----------------
 # Chat History (Sayan's part)
+# Chat Database added (Satya's part)
 # Ye chat history ko sidebar me show karta hai.
 # -----------------
+
+# Load user chats
+user_chats = load_chats_from_mongo(user_email)
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = {}
-user_email = user["email"]
+# user_email = user["email"]
+
 if user_email not in st.session_state.chat_history:
-    st.session_state.chat_history[user_email] = []
+    st.session_state.chat_history[user_email] = [{"_id": str(chat["_id"]),"title": chat["title"], "messages": chat["messages"]} for chat in user_chats]
 
 st.sidebar.markdown("<hr>", unsafe_allow_html=True)
 st.sidebar.markdown("<h4 style='text-align: center; font-family: Poppins, sans-serif;'>Chat History</h4>", unsafe_allow_html=True)
@@ -146,6 +183,7 @@ if st.session_state.chat_history.get(user_email, []):
             st.session_state.messages = session["messages"]
             rerun()
         if col2.button("🗑️", key=f"delete_{idx}", help="Delete this chat"):
+            delete_chat_from_mongo(session["_id"])  # Remove from MongoDB
             st.session_state.chat_history[user_email].pop(idx)
             rerun()
 else:
@@ -153,6 +191,7 @@ else:
 
 # -----------------
 # New Chat Button (Sayan's part)
+# Chat stored in Database (Satya's part)
 # Ye naya chat session shuru karta hai.
 # -----------------
 with st.sidebar.container():
@@ -161,6 +200,7 @@ with st.sidebar.container():
     if new_chat:
         if "messages" in st.session_state and len(st.session_state.messages) > 1:
             first_question = next((msg["content"] for msg in st.session_state.messages if msg["role"] == "user"), "Chat Session")
+            save_chat_to_mongo(user_email, first_question, st.session_state.messages.copy())
             st.session_state.chat_history[user_email].append({"title": first_question, "messages": st.session_state.messages.copy()})
         st.session_state.messages = [
             {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
