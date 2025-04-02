@@ -29,9 +29,12 @@ def rerun():
         st.stop()
 
 def get_image_as_base64(image_path):     #for clearer logo image and faster render 
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except (FileNotFoundError, IOError) as e:
+        st.error(f"Error loading image {image_path}: {e}")
+        return ""
 # Convert your logo to base64
 logo_base64 = get_image_as_base64("perplexa_logo.png")
 
