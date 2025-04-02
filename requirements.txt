@@ -9,6 +9,7 @@ serpapi
 sentence-transformers
 scikit-learn
 cohere
+base64
 openai
 pymongo
 bson
