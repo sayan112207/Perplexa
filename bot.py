@@ -300,7 +300,7 @@ with st.sidebar.container():
         ]
         rerun()
 
-        
+
 # -----------------
 # My Profile (Sayan's part)
 # Ye user profile details sidebar me show karta hai.
