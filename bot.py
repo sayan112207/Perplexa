@@ -9,6 +9,7 @@ from serpapi.google_search import GoogleSearch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import cohere
+import base64
 from openai import OpenAI
 from PIL import Image
 
@@ -18,7 +19,6 @@ torch.classes.__path__ = []
 
 # -----------------
 # Helper function for rerunning the app (Sayan's part)
-# Ye code app ko rerun karne ke liye hai.
 # -----------------
 def rerun():
     if hasattr(st, 'experimental_rerun'):
@@ -28,54 +28,123 @@ def rerun():
     else:
         st.stop()
 
+def get_image_as_base64(image_path):     #for clearer logo image and faster render 
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# Convert your logo to base64
+logo_base64 = get_image_as_base64("perplexa_logo.png")
+
 # -----------------
-# Page Config (Sayan's part)
-# Ye code page configuration set karta hai.
+# Page Config
 # -----------------
 st.set_page_config(page_title="Perplexa Chat", layout="wide")
 
+def authenticate_user():
+    user = getattr(st, "experimental_user", None)
+    
+    if not user or not getattr(user, "name", None):
+        st.markdown(
+            f"""
+            <style>
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+            .login-container {{
+                text-align: center;
+                color: #EAD78B;
+                font-family: 'Montserrat', sans-serif;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background: #1E1E2F;
+            }}
+            .login-logo {{
+                width: 250px;
+                margin-right:20px;
+            }}
+            .login-heading {{
+                font-size: 2.5rem;
+                letter-spacing: 1.2px;
+                margin-bottom: 10px;
+            }}
+            .login-tagline {{
+                font-size: 1rem;
+                letter-spacing: 5.5px;
+                opacity: 0.8;
+                margin-bottom: 30px;
+            }}
+            .login-btn {{
+                background: linear-gradient(135deg, #EAD78B, #C9B368);
+                color: #FF4B4B !important;
+                font-size: 1.2rem;
+                font-weight: 600;
+                padding: 14px 36px;
+                border: none;
+                margin-right: 10px;
+                border-radius: 30px;
+                cursor: pointer;
+                transition: 0.3s ease-in-out;
+                box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+                text-decoration: none !important;
+            }}
+            .login-btn:hover {{
+                transform: scale(1.05);
+                box-shadow: 0px 6px 14px rgba(0,0,0,0.4);
+            }}
+            </style>
+            <div class="login-container">
+                <img src="data:image/png;base64,{logo_base64}" class="login-logo" width="150" />
+                <h1 class="login-heading">Perplexa Chat</h1>
+                <p class="login-tagline">A NEW WAY OF SEARCHING</p>
+                <a href="?login=true" class="login-btn" target="_self">Login@Perplexa</a>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        if st.query_params.get("login") == "true":
+            st.query_params.clear()
+            st.login("auth0")
+        st.stop()
+    
+    user_data = {
+        "name": user.name,
+        "email": user.email if getattr(user, "email", None) else "No Email",
+        "picture": user.picture if getattr(user, "picture", None) else None
+    }
+    return user_data
+
+# Get user data after authentication
+user = authenticate_user()
+user_email = user["email"]
+
+
+
+
+
 # -----------------
 # Header with Logo and Title in Columns (Patel's work)
-# Ye header design karta hai aur logo aur title ko aligned rakhta hai.
+# (Only shown after authentication)
 # -----------------
 try:
-    logo = Image.open("https://github.com/sayan112207/Perplexa/blob/main/perplexa%20logo.svg")
+    logo = Image.open("perplexa_logo.png")
 except FileNotFoundError:
     logo = None
 
-header_col1, header_col2 = st.columns([0.1, 0.9])
+header_col1, header_col2 = st.columns([0.03, 0.5])
 with header_col1:
     if logo:
-        st.image(logo, width=50)
+        st.image(logo, width=150)
 with header_col2:
     st.markdown(
         """
-        <h1 class="app-title" style="margin-top: -25px; font-family: 'Poppins', sans-serif;">
+        <h1 class="app-title" style="margin-top: -20px; font-family: 'Poppins', sans-serif;">
             Perplexa Chat
         </h1>
         """,
         unsafe_allow_html=True
     )
-
-# -----------------
-# Authentication (Sayan's part)
-# Ye code user ko authenticate karta hai.
-# -----------------
-def authenticate_user():
-    user = getattr(st, "experimental_user", None)
-    if not user or not getattr(user, "name", None):
-        st.title("Authentication")  # Ye authentication page show karta hai.
-        if st.button("Login @Perplexa"):
-            st.login("auth0")
-        st.warning("Please log in to access the chat.")
-        st.stop()
-    return {
-        "name": user.name,
-        "email": user.email if getattr(user, "email", None) else "No Email",
-        "picture": user.picture if getattr(user, "picture", None) else None
-    }
-
-user = authenticate_user()
 
 # -----------------
 # Initialize Messages (Sayan's part)
@@ -101,25 +170,39 @@ model_choice = st.sidebar.selectbox(
     index=0
 )
 
+# -----------------
 # Geek Mode Button with glow animation (Patel's work)
-# Ye Geek Mode button ko glow effect deta hai.
-# Geek Mode Button: Toggles between normal and geeky theme, and starts a new chat session
-if st.sidebar.button("🤓 Geek Mode", key="reason_btn", help="Toggle Geek Mode"):
-    st.session_state.geeky_theme = not st.session_state.get("geeky_theme", False)
-    
-    # Store current chat history before switching modes
+# -----------------
+
+if "geeky_theme" not in st.session_state:
+    st.session_state.geeky_theme = False
+
+geek_mode_on = st.sidebar.toggle("Geek Mode", value=st.session_state.geeky_theme, help="Toggle Geek Mode") #toggle 
+
+# Update session state based on the toggle state
+if geek_mode_on != st.session_state.geeky_theme:
+    st.session_state.geeky_theme = geek_mode_on
+
+    # Store chat history if geek mode is toggled and messages exist
     if "messages" in st.session_state and len(st.session_state.messages) > 1:
         first_question = next((msg["content"] for msg in st.session_state.messages if msg["role"] == "user"), "Chat Session")
         st.session_state.chat_history[user["email"]].append({"title": first_question, "messages": st.session_state.messages.copy()})
-    
-    # Clear current messages and start a new chat
+
+    # Set the assistant's initial response based on the toggle
     st.session_state.messages = [
-        {"role": "assistant", "content": "Welcome to Geek Mode! 🧠 What geeky stuff are we discussing today?"} 
-        if st.session_state.geeky_theme 
+        {"role": "assistant", "content": "Welcome to Geek Mode! 🧠 What geeky stuff are we discussing today?"}
+        if st.session_state.geeky_theme
         else {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
     ]
     
-    rerun()
+    # Trigger page rerun after state change
+    st.rerun() 
+
+# Display the status of Geek Mode
+if st.session_state.geeky_theme:
+    st.sidebar.write("🤓 Geek Mode is ON!")
+else:
+    st.sidebar.write("😴 Geek Mode is OFF!")
 
 
 # -----------------
@@ -179,145 +262,118 @@ with st.sidebar.expander("My Profile", expanded=False):
         st.stop()
 
 # -----------------
-# Custom CSS (Patel's work)
-# Ye code design aur UI/UX ko improve karta hai.
+# Custom CSS (Patel's Work)
 # -----------------
+
 if st.session_state.get("geeky_theme", False):
-    # Dark theme
+    # Dark Theme Styles
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-    body {
-        background: #010832;
-        color: #eade8d;
-        font-family: 'Poppins', sans-serif;
-        margin: 0;
-        padding: 0;
-        transition: background 0.3s, color 0.3s;
+
+    :root {
+        --bg-color: #010832;
+        --text-color: #eade8d;
+        --accent-color: #eade8d;
+        --button-bg: linear-gradient(135deg, #eade8d, #010832);
+        --button-text: #010832;
+        --button-border: #eade8d;
+        --message-bg: rgba(234,222,141,0.15);
+        --message-border: rgba(234,222,141,0.3);
+        --shadow-color: rgba(0,0,0,0.3);
     }
-    .sidebar .sidebar-content {
-        background-color: #010832;
-    }
-    .logo {
-        margin-left: auto; 
-        margin-right: auto;
-    }
-    .app-title {
-        font-weight: 600;
-        letter-spacing: 1px;
-        font-size: 2rem;
-        margin-top: 10px;
-    }
-    /* Buttons */
-    .stButton>button {
-        background: linear-gradient(135deg, #eade8d, #010832);
-        color: #010832;
-        border: 2px solid #eade8d;
-        padding: 0.7rem 1.4rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.4);
-    }
-    .stButton>button:active {
-        transform: scale(0.98);
-        box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-    }
-    /* Glow effect ONLY on the Geek Mode (Reason) button */
-    .stButton>button#reason_btn {
-        animation: glowPulse 1.5s infinite ease-in-out;
-    }
-    @keyframes glowPulse {
-        0%   { box-shadow: 0 0 5px #eade8d; }
-        50%  { box-shadow: 0 0 15px #eade8d; }
-        100% { box-shadow: 0 0 5px #eade8d; }
-    }
-    /* Chat messages */
-    .chat-message {
-        background: rgba(234,222,141,0.15);
-        border: 1px solid rgba(234,222,141,0.3);
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 0.5rem 0;
-        animation: fadeSlide 0.4s ease-out;
-    }
-    @keyframes fadeSlide {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    </style>
     """, unsafe_allow_html=True)
 else:
-    # Light theme
+    # Light Theme Styles
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-    body {
-        background: #eade8d;
-        color: #010832;
-        font-family: 'Poppins', sans-serif;
-        margin: 0;
-        padding: 0;
-        transition: background 0.3s, color 0.3s;
+    :root {
+        --bg-color: #eade8d;
+        --text-color: #010832;
+        --accent-color: #010832;
+        --button-bg: linear-gradient(135deg, #010832, #eade8d);
+        --button-text: #eade8d;
+        --button-border: #010832;
+        --message-bg: rgba(1,8,50,0.1);
+        --message-border: rgba(1,8,50,0.2);
+        --shadow-color: rgba(0,0,0,0.2);
     }
-    .sidebar .sidebar-content {
-        background-color: #eade8d;
-    }
-    .logo {
-        margin-left: auto; 
-        margin-right: auto;
-    }
-    .app-title {
-        font-weight: 600;
-        letter-spacing: 1px;
-        font-size: 2rem;
-        margin-top: 10px;
-    }
-    /* Buttons */
-    .stButton>button {
-        background: linear-gradient(135deg, #010832, #eade8d);
-        color: #eade8d;
-        border: 2px solid #010832;
-        padding: 0.7rem 1.4rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-    }
-    .stButton>button:active {
-        transform: scale(0.98);
-        box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-    }
-    /* Glow effect ONLY on the Geek Mode (Reason) button */
-    .stButton>button#reason_btn {
-        animation: glowPulse 1.5s infinite ease-in-out;
-    }
-    @keyframes glowPulse {
-        0%   { box-shadow: 0 0 5px #010832; }
-        50%  { box-shadow: 0 0 15px #010832; }
-        100% { box-shadow: 0 0 5px #010832; }
-    }
-    /* Chat messages */
-    .chat-message {
-        background: rgba(1,8,50,0.1);
-        border: 1px solid rgba(1,8,50,0.2);
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 0.5rem 0;
-        animation: fadeSlide 0.4s ease-out;
-    }
-    @keyframes fadeSlide {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    </style>
     """, unsafe_allow_html=True)
+
+# Common Styles
+st.markdown("""
+<style>
+body {
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Sidebar */
+.sidebar .sidebar-content {
+    background-color: var(--bg-color);
+}
+
+/* App Title */
+.app-title {
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-size: 2rem;
+    margin-top: 10px;
+}
+
+/* Buttons */
+.stButton > button {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 2px solid var(--button-border);
+    padding: 0.7rem 1.4rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px var(--shadow-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-weight: 600;
+}
+
+.stButton > button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 14px var(--shadow-color);
+}
+
+.stButton > button:active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 6px var(--shadow-color);
+}
+
+/* Special Animated Button */
+.stButton > button#reason_btn {
+    animation: glowPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+    0%   { box-shadow: 0 0 5px var(--accent-color); }
+    50%  { box-shadow: 0 0 15px var(--accent-color); }
+    100% { box-shadow: 0 0 5px var(--accent-color); }
+}
+
+/* Chat Messages */
+.chat-message {
+    background: var(--message-bg);
+    border: 1px solid var(--message-border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin: 0.5rem 0;
+    animation: fadeSlide 0.4s ease-out;
+}
+
+@keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------
 # Load Environment Variables (Sayan's part)
