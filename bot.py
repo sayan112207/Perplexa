@@ -18,6 +18,7 @@ from bson.objectid import ObjectId
 import torch
 torch.classes.__path__ = []
 
+
 # -----------------
 # Helper function for rerunning the app (Sayan's part)
 # -----------------
@@ -42,6 +43,49 @@ logo_base64 = get_image_as_base64("perplexa_logo.png")
 st.set_page_config(page_title="Perplexa Chat", 
                    layout="wide", 
                    page_icon="https://github.com/sayan112207/Perplexa/blob/main/perplexa_logo.png?raw=true")
+
+
+# -----------------
+# DataBase Setup and Functions Part (Satya's part)
+# -----------------
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI")  # Store your MongoDB URI in .env
+try:
+    client = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
+    # db = client.test  # Test the connection
+    db = client.get_database("perplexa_chat")  # Specify your database name
+    print("Connected Successfully!")
+except Exception as e:
+    print("Connection failed:", e)
+
+if db is not None:
+    users_collection = db["users"]
+    chats_collection = db["chats"]
+else:
+    print("Database connection failed. Cannot proceed.")
+
+# Function to save a new user
+def save_user_to_mongo(user):
+    users_collection.update_one({"email": user["email"]}, {"$set": user}, upsert=True)
+    
+# Function to fetch all user chats
+def load_chats_from_mongo(user_email):
+    return list(chats_collection.find({"email": user_email}))
+
+# Function to save a new chat
+def save_chat_to_mongo(user_email, chat_title, messages):
+    chat_data = {"email": user_email, "title": chat_title, "messages": messages}
+    chats_collection.insert_one(chat_data)
+
+# Function to delete a specific chat
+def delete_chat_from_mongo(chat_id):
+    chats_collection.delete_one({"_id": ObjectId(chat_id)})
+
+
+# -----------------
+# Authenticate User (Sayan & Patels part)
+# -----------------
 
 
 def authenticate_user():
@@ -117,15 +161,12 @@ def authenticate_user():
         "email": user.email if getattr(user, "email", None) else "No Email",
         "picture": user.picture if getattr(user, "picture", None) else None
     }
+    save_user_to_mongo(user)
     return user_data
 
 # Get user data after authentication
 user = authenticate_user()
 user_email = user["email"]
-
-
-
-
 
 # -----------------
 # Header with Logo and Title in Columns (Patel's work)
@@ -148,67 +189,7 @@ with header_col2:
         </h1>
         """,
         unsafe_allow_html=True
-)
-# -----------------
-# DataBase Setup and Functions Part (Satya's part)
-# -----------------
-load_dotenv()
-
-MONGO_URI = os.getenv("MONGO_URI")  # Store your MongoDB URI in .env
-try:
-    client = MongoClient(MONGO_URI, tls=True, tlsAllowInvalidCertificates=True)
-    # db = client.test  # Test the connection
-    db = client.get_database("perplexa_chat")  # Specify your database name
-    print("Connected Successfully!")
-except Exception as e:
-    print("Connection failed:", e)
-
-if db is not None:
-    users_collection = db["users"]
-    chats_collection = db["chats"]
-else:
-    print("Database connection failed. Cannot proceed.")
-
-# Function to save a new user
-def save_user_to_mongo(user):
-    users_collection.update_one({"email": user["email"]}, {"$set": user}, upsert=True)
-    
-# Function to fetch all user chats
-def load_chats_from_mongo(user_email):
-    return list(chats_collection.find({"email": user_email}))
-
-# Function to save a new chat
-def save_chat_to_mongo(user_email, chat_title, messages):
-    chat_data = {"email": user_email, "title": chat_title, "messages": messages}
-    chats_collection.insert_one(chat_data)
-
-# Function to delete a specific chat
-def delete_chat_from_mongo(chat_id):
-    chats_collection.delete_one({"_id": ObjectId(chat_id)})
-
-# -----------------
-# Authentication (Sayan's part)
-# Ye code user ko authenticate karta hai.
-# -----------------
-def authenticate_user():
-    user = getattr(st, "experimental_user", None)
-    if not user or not getattr(user, "name", None):
-        st.title("Authentication")  # Ye authentication page show karta hai.
-        if st.button("Login @Perplexa"):
-            st.login("auth0")
-        st.warning("Please log in to access the chat.")
-        st.stop()
-    user_data =  {
-        "name": user.name,
-        "email": user.email if getattr(user, "email", None) else "No Email",
-        "picture": user.picture if getattr(user, "picture", None) else None
-    }
-    save_user_to_mongo(user)
-    return user_data
-
-user = authenticate_user()
-
-user_email = user["email"]
+    )
 
 # -----------------
 # Initialize Messages (Sayan's part)
@@ -318,6 +299,7 @@ with st.sidebar.container():
             {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
         ]
         rerun()
+
 
 # -----------------
 # My Profile (Sayan's part)
