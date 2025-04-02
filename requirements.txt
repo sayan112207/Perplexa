@@ -10,3 +10,5 @@ sentence-transformers
 scikit-learn
 cohere
 openai
+pymongo
+bson
