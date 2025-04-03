@@ -74,7 +74,7 @@ def load_chats_from_mongo(user_email):
     return list(chats_collection.find({"email": user_email}))
 
 # Function to save a new chat
-def save_chat_to_mongo(user_email, chat_idchat_title, messages):
+def save_chat_to_mongo(user_email, chat_id,chat_title, messages):
     # chat_data = {"email": user_email, "title": chat_title, "messages": messages}
     # chats_collection.insert_one(chat_data)
     if chat_id:
