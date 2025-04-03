@@ -20,8 +20,9 @@ torch.classes.__path__ = []
 
 
 # -----------------
-# Helper function for rerunning the app (Sayan's part)
+# Helper Functions (Sayan)
 # -----------------
+
 def rerun():
     if hasattr(st, 'experimental_rerun'):
         st.experimental_rerun()
@@ -30,13 +31,12 @@ def rerun():
     else:
         st.stop()
 
-def get_image_as_base64(image_path):     #for clearer logo image and faster render 
+def get_image_as_base64(image_path):     #for clearer logo image and faster render (Patel)
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
 # Convert your logo to base64
 logo_base64 = get_image_as_base64("perplexa_logo.png")
-
 # -----------------
 # Page Config
 # -----------------
@@ -84,9 +84,8 @@ def delete_chat_from_mongo(chat_id):
 
 
 # -----------------
-# Authenticate User (Sayan & Patels part)
+# User Authentication (Sayan & Patel)
 # -----------------
-
 
 def authenticate_user():
     user = getattr(st, "experimental_user", None)
@@ -95,54 +94,70 @@ def authenticate_user():
         st.markdown(
             f"""
             <style>
-            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+            :root {{
+                --primary-color: #1E1E2F;
+                --secondary-color: #EAD78B;
+                --button-color: linear-gradient(135deg, #EAD78B, #C9B368);
+            }}
+
             .login-container {{
                 text-align: center;
-                color: #EAD78B;
-                font-family: 'Montserrat', sans-serif;
+                color: var(--secondary-color);
+                font-family: 'Poppins', sans-serif;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 height: 100vh;
-                background: #1E1E2F;
+                width: 100vw;
+                background: linear-gradient(to bottom, #0e1117, var(--primary-color));
+                position: fixed;
+                top: 0;
+                left: 0;
             }}
+
             .login-logo {{
                 width: 250px;
-                margin-right:20px;
+                margin-bottom: 20px;
+                margin-right: 27px;
             }}
+
             .login-heading {{
                 font-size: 2.5rem;
-                letter-spacing: 1.2px;
+                font-weight: 600;
                 margin-bottom: 10px;
             }}
             .login-tagline {{
-                font-size: 1rem;
+                font-size: 1.5rem;
                 letter-spacing: 5.5px;
-                opacity: 0.8;
-                margin-bottom: 30px;
             }}
+
             .login-btn {{
-                background: linear-gradient(135deg, #EAD78B, #C9B368);
-                color: #FF4B4B !important;
+                background: var(--button-color);
+                color: #1E1E2F !important;
                 font-size: 1.2rem;
                 font-weight: 600;
                 padding: 14px 36px;
-                border: none;
+                margin-top: 20px;
                 margin-right: 10px;
+                border: none;
                 border-radius: 30px;
                 cursor: pointer;
                 transition: 0.3s ease-in-out;
                 box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
                 text-decoration: none !important;
             }}
+
             .login-btn:hover {{
                 transform: scale(1.05);
                 box-shadow: 0px 6px 14px rgba(0,0,0,0.4);
             }}
             </style>
+
             <div class="login-container">
-                <img src="data:image/png;base64,{logo_base64}" class="login-logo" width="150" />
+                <img src="data:image/png;base64,{logo_base64}" class="login-logo"/>
                 <h1 class="login-heading">Perplexa Chat</h1>
                 <p class="login-tagline">A NEW WAY OF SEARCHING</p>
                 <a href="?login=true" class="login-btn" target="_self">Login@Perplexa</a>
@@ -169,64 +184,125 @@ user = authenticate_user()
 user_email = user["email"]
 
 # -----------------
-# Header with Logo and Title in Columns (Patel's work)
+# Header with Logo and Title in Columns (Patel)
 # (Only shown after authentication)
 # -----------------
-try:
-    logo = Image.open("perplexa_logo.png")
-except FileNotFoundError:
-    logo = None
 
-header_col1, header_col2 = st.columns([0.03, 0.5])
-with header_col1:
-    if logo:
-        st.image(logo, width=150)
-with header_col2:
+try:
+    with open("perplexa_logo.png", "rb") as img_file:
+        logo_base64 = base64.b64encode(img_file.read()).decode()
+except FileNotFoundError:
+    logo_base64 = None
+
+# --- HEADER SECTION ---
+st.markdown(
+    """
+    <style>
+        .header-container {
+            display: flex;
+            align-items: center;  
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .header-logo img {
+            width: 55px;
+            height: 55px; 
+            display: block;
+        }
+        .header-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            line-height: 55px; /* Ensures text aligns with the image */
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Render Header with Logo ---
+
+if logo_base64:
     st.markdown(
-        """
-        <h1 class="app-title" style="margin-top: -20px; font-family: 'Poppins', sans-serif;">
-            Perplexa Chat
-        </h1>
+        f"""
+        <div class="header-container">
+            <div class="header-logo">
+                <img src="data:image/png;base64,{logo_base64}" alt="Perplexa Logo">
+            </div>
+            <div class="header-title">Perplexa Chat</div>
+        </div>
         """,
         unsafe_allow_html=True
     )
+else:
+    st.markdown(
+        """
+        <div class="header-container">
+            <div class="header-title">Perplexa Chat</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )  
 
-# -----------------
-# Initialize Messages (Sayan's part)
-# Ye initial chat messages set karta hai.
-# -----------------
+# --- INITIALIZE CHAT MESSAGES ---
+
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
     ]
 
-# -----------------
-# Sidebar Layout (Sayan's part)
-# Ye sidebar me welcome message, model selector, etc. show karta hai.
-# -----------------
+# --- SIDEBAR DESIGN ---
+
 st.sidebar.markdown(
-    f"<h3 style='text-align: center; font-family: Poppins, sans-serif;'>Welcome,<br><strong>{user['name']}</strong></h3>", 
+    f"""
+    <div style="
+        text-align: center;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--secondary-color);
+        padding: 15px 10px;
+        margin-bottom: 10px;
+        ">
+        Welcome,<br><span style="font-weight: 500;">{user['name']}</span>
+    </div>
+    <hr style="border: none; height: 1px; background: rgba(0, 0, 0, 0.1); width: 80%; margin: auto;">
+    """,
+    unsafe_allow_html=True
+)
+
+# --- MODEL SELECTION ---
+
+st.sidebar.markdown(
+    "<p style='font-family: Poppins, sans-serif; font-size: 1.1rem; font-weight: 600; margin-top: 2px; margin-bottom: 2px;'>Select Model</p>",
     unsafe_allow_html=True
 )
 
 model_choice = st.sidebar.selectbox(
-    "Select Model",
+    "",
     ["Gemini", "Mistral", "Command R+", "Deepseek R1", "Phi 3", "Nemotron", "Meta Llama", "Qwen 32B"],
     index=0
 )
 
+
+
 # -----------------
-# Geek Mode Button with glow animation (Patel's work)
+# Theme Mode Button with animation (Patel)
 # -----------------
 
-if "geeky_theme" not in st.session_state:
-    st.session_state.geeky_theme = False
+if "theme" not in st.session_state:
+    st.session_state.theme = False
 
-geek_mode_on = st.sidebar.toggle("Geek Mode", value=st.session_state.geeky_theme, help="Toggle Geek Mode") #toggle 
+theme_mode_on = st.sidebar.toggle("Theme Mode", value=st.session_state.theme, help="Toggle Theme Mode") #toggle 
 
 # Update session state based on the toggle state
-if geek_mode_on != st.session_state.geeky_theme:
-    st.session_state.geeky_theme = geek_mode_on
+if theme_mode_on != st.session_state.theme:
+    st.session_state.theme = theme_mode_on
 
     # Store chat history if geek mode is toggled and messages exist
     if "messages" in st.session_state and len(st.session_state.messages) > 1:
@@ -235,20 +311,19 @@ if geek_mode_on != st.session_state.geeky_theme:
 
     # Set the assistant's initial response based on the toggle
     st.session_state.messages = [
-        {"role": "assistant", "content": "Welcome to Geek Mode! 🧠 What geeky stuff are we discussing today?"}
-        if st.session_state.geeky_theme
+        {"role": "assistant", "content": "Welcome to Light Mode! 😄 What stuff are we discussing today?"}
+        if st.session_state.theme
         else {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
     ]
     
     # Trigger page rerun after state change
     st.rerun() 
 
-# Display the status of Geek Mode
-if st.session_state.geeky_theme:
-    st.sidebar.write("🤓 Geek Mode is ON!")
+# Display the status of Theme Mode
+if st.session_state.theme:
+    st.sidebar.write("🌞 Light Mode is ON!")
 else:
-    st.sidebar.write("😴 Geek Mode is OFF!")
-
+    st.sidebar.write("🌚 Dark Mode is ON!")
 
 # -----------------
 # Chat History (Sayan's part)
@@ -317,10 +392,10 @@ with st.sidebar.expander("My Profile", expanded=False):
         st.stop()
 
 # -----------------
-# Custom CSS (Patel's Work)
+# Custom CSS (Patel)
 # -----------------
 
-if st.session_state.get("geeky_theme", False):
+if st.session_state.get("theme", False):
     # Dark Theme Styles
     st.markdown("""
     <style>
@@ -342,13 +417,15 @@ else:
     # Light Theme Styles
     st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
     :root {
-        --bg-color: #eade8d;
-        --text-color: #010832;
-        --accent-color: #010832;
-        --button-bg: linear-gradient(135deg, #010832, #eade8d);
-        --button-text: #eade8d;
-        --button-border: #010832;
+        --bg-color: #f4f4f9;
+        --text-color: #1b1b2f;
+        --accent-color: #1b1b2f;
+        --button-bg: linear-gradient(135deg, #1b1b2f, #eade8d);
+        --button-text: #fff;
+        --button-border: #1b1b2f;
         --message-bg: rgba(1,8,50,0.1);
         --message-border: rgba(1,8,50,0.2);
         --shadow-color: rgba(0,0,0,0.2);
@@ -358,10 +435,11 @@ else:
 # Common Styles
 st.markdown("""
 <style>
+/* Global Styles */
 body {
     background: var(--bg-color);
     color: var(--text-color);
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
     transition: background 0.3s ease, color 0.3s ease;
@@ -370,35 +448,36 @@ body {
 /* Sidebar */
 .sidebar .sidebar-content {
     background-color: var(--bg-color);
+    padding: 10px;
 }
 
 /* App Title */
 .app-title {
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 1px;
-    font-size: 2rem;
+    font-size: 2.5rem;
     margin-top: 10px;
+    text-align: center;
+    animation: fadeIn 1s ease-in-out;
 }
 
 /* Buttons */
 .stButton > button {
-    background: var(--button-bg);
-    color: var(--button-text);
     border: 2px solid var(--button-border);
-    padding: 0.7rem 1.4rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-size: 16px;
     font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
 }
 
 .stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 14px var(--shadow-color);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px var(--shadow-color);
 }
 
 .stButton > button:active {
-    transform: scale(0.98);
+    transform: translateY(1px);
     box-shadow: 0 3px 6px var(--shadow-color);
 }
 
@@ -407,25 +486,40 @@ body {
     animation: glowPulse 1.5s infinite ease-in-out;
 }
 
-@keyframes glowPulse {
-    0%   { box-shadow: 0 0 5px var(--accent-color); }
-    50%  { box-shadow: 0 0 15px var(--accent-color); }
-    100% { box-shadow: 0 0 5px var(--accent-color); }
-}
-
 /* Chat Messages */
 .chat-message {
     background: var(--message-bg);
     border: 1px solid var(--message-border);
     border-radius: 10px;
-    padding: 1rem 1.2rem;
+    padding: 1rem 1.5rem;
     margin: 0.5rem 0;
-    animation: fadeSlide 0.4s ease-out;
+    font-size: 15px;
+    line-height: 1.5;
+    box-shadow: 2px 2px 10px var(--shadow-color);
+    animation: fadeSlide 0.5s ease-out;
+}
+
+/* Hover effect on chat messages */
+.chat-message:hover {
+    transform: scale(1.02);
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeSlide {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+    0%   { box-shadow: 0 0 5px var(--accent-color); }
+    50%  { box-shadow: 0 0 15px var(--accent-color); }
+    100% { box-shadow: 0 0 5px var(--accent-color); }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -514,9 +608,7 @@ def build_rag_prompt(query, context, references):
         f"You are an expert assistant. Using the following retrieved context, provide a detailed explanation for the query: '{query}'.\n\n"
         f"Context:\n{context}\n\n"
         "Your response should include:\n"
-        "1. An introduction defining the topic.\n"
-        "2. Key points in bullet format.\n"
-        "3. A references section listing the source URLs.\n\n"
+        "A references section listing the source URLs.\n\n"
         f"References:\n{refs_formatted}\n\n"
         "Make sure your answer is clear, concise, and accessible to beginners."
     )
