@@ -23,6 +23,19 @@ A smart web-searching AI with Retrieval Augmented Generation (RAG) system that p
 ## DataBase Used
 - Mongo DB
   
+=======
+## Recent Updates
+
+### Optimized Perplexa Logo:
+- Integrated Base64 encoding for the logo to ensure faster loading and better image quality.
+- Removed dependency on external image files, improving efficiency.
+
+### CSS Enhancements:
+- Improved UI styling for better readability and responsiveness.
+
+_Updated by **Patel**_
+
+
 ## How It Works
 
 1. **Query Processing**: Analyzes the user question to extract optimal search keywords
