@@ -90,8 +90,19 @@ def load_chats_from_mongo(user_email):
 
 # Function to save a new chat
 def save_chat_to_mongo(user_email, chat_title, messages):
-    chat_data = {"email": user_email, "title": chat_title, "messages": messages}
-    chats_collection.insert_one(chat_data)
+    # chat_data = {"email": user_email, "title": chat_title, "messages": messages}
+    # chats_collection.insert_one(chat_data)
+    if chat_id:
+        # If chat already exists update messages
+        chats_collection.update_one(
+            {"_id": ObjectId(chat_id)},
+            {"$set": {"messages": messages}},
+        )
+    else:
+        # If chat does not exist, create a new one
+        chat_data = {"email": user_email, "title": chat_title, "messages": messages}
+        chat_id = chats_collection.insert_one(chat_data).inserted_id
+        return str(chat_id)  # Return the new chat ID
 
 # Function to delete a specific chat
 def delete_chat_from_mongo(chat_id):
@@ -179,6 +190,10 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = {}
 # user_email = user["email"]
 
+#.......(Satya's part) To store current chat id to update frequently
+if "current_chat_id" not in st.session_state:
+    st.session_state.current_chat_id = None
+
 if user_email not in st.session_state.chat_history:
     st.session_state.chat_history[user_email] = [{"_id": str(chat["_id"]),"title": chat["title"], "messages": chat["messages"]} for chat in user_chats]
 
@@ -192,7 +207,10 @@ if st.session_state.chat_history.get(user_email, []):
             st.session_state.messages = session["messages"]
             rerun()
         if col2.button("🗑️", key=f"delete_{idx}", help="Delete this chat"):
-            delete_chat_from_mongo(session["_id"])  # Remove from MongoDB
+            if "_id" in session:
+                delete_chat_from_mongo(session["_id"])  # Remove from MongoDB
+            else:
+                print("Error: '_id' not found in session")
             st.session_state.chat_history[user_email].pop(idx)
             rerun()
 else:
@@ -209,7 +227,7 @@ with st.sidebar.container():
     if new_chat:
         if "messages" in st.session_state and len(st.session_state.messages) > 1:
             first_question = next((msg["content"] for msg in st.session_state.messages if msg["role"] == "user"), "Chat Session")
-            save_chat_to_mongo(user_email, first_question, st.session_state.messages.copy())
+            save_chat_to_mongo(user_email,None , first_question, st.session_state.messages.copy())
             st.session_state.chat_history[user_email].append({"title": first_question, "messages": st.session_state.messages.copy()})
         st.session_state.messages = [
             {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
@@ -572,9 +590,26 @@ def generate_greeting_response():
 for msg in st.session_state.messages:
     st.markdown(f"<div class='chat-message'>{msg['content']}</div>", unsafe_allow_html=True)
 
+# .... Immediately Update Chat History (Satya's Part)
 user_input = st.chat_input("Type your message here...")  # Ye user input leta hai.
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
+    # Save or update chat in MongoDB
+    if not st.session_state.current_chat_id:
+        chat_title = user_input[:50]  # Use first 50 characters as title
+        chat_id = save_chat_to_mongo(user_email, None, chat_title, st.session_state.messages)
+
+        if chat_id:
+            st.session_state.current_chat_id = chat_id
+            # Immediately update chat history
+            if user_email in st.session_state.chat_history:
+                st.session_state.chat_history[user_email].append({"_id": chat_id, "title": chat_title, "messages": st.session_state.messages.copy()})
+            else:
+                st.session_state.chat_history[user_email] = [{"_id": chat_id, "title": chat_title, "messages": st.session_state.messages.copy()}]
+    else:
+        save_chat_to_mongo(user_email, st.session_state.current_chat_id, None, st.session_state.messages)
+    
+    #Reload Chat History
     rerun()
 
 if st.session_state.messages[-1]["role"] == "user":
