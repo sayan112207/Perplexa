@@ -11,4 +11,3 @@ scikit-learn
 cohere
 openai
 pymongo
-bson
