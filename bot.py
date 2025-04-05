@@ -289,15 +289,24 @@ st.sidebar.markdown(
 
 # --- MODEL SELECTION ---
 
-st.sidebar.markdown(
-    "<p style='font-family: Poppins, sans-serif; font-size: 1.1rem; font-weight: 600; margin-top: 2px; margin-bottom: 2px;'>Select Model</p>",
+st.markdown(
+    """
+    <style>
+    /* Change cursor to pointer for the selectbox */
+    .st-bm, .st-bn, .st-bt, .st-b6 {
+        cursor: pointer !important;
+    }
+    </style>
+    <p style='font-family: Poppins, sans-serif; font-size: 1.1rem; font-weight: 600; margin-top: 2px; margin-bottom: 2px;'>Select Model</p>
+    """,
     unsafe_allow_html=True
 )
 
 model_choice = st.sidebar.selectbox(
-    "",
+    "Select a model",
     ["Gemini", "Mistral", "Command R+", "Deepseek R1", "Phi 3", "Nemotron", "Meta Llama", "Qwen 32B"],
-    index=0
+    index=0,
+    label_visibility="collapsed"  # Hides the label visually but keeps it accessible
 )
 
 
