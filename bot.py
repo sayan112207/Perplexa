@@ -289,16 +289,8 @@ st.sidebar.markdown(
 
 # --- MODEL SELECTION ---
 
-st.markdown(
-    """
-    <style>
-    /* Change cursor to pointer for the selectbox */
-    .st-bm, .st-bn, .st-bt, .st-b6 {
-        cursor: pointer !important;
-    }
-    </style>
-    <p style='font-family: Poppins, sans-serif; font-size: 1.1rem; font-weight: 600; margin-top: 2px; margin-bottom: 2px;'>Select Model</p>
-    """,
+st.sidebar.markdown(
+    "<p style='font-family: Poppins, sans-serif; font-size: 1.1rem; font-weight: 600; margin-top: 2px; margin-bottom: 2px;'>Select Model</p>",
     unsafe_allow_html=True
 )
 
