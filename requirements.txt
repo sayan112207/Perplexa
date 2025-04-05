@@ -1,5 +1,5 @@
 Authlib==1.5.1
-streamlit==1.43.2
+streamlit==1.42.0
 requests
 python-dotenv
 numpy
@@ -10,4 +10,4 @@ sentence-transformers
 scikit-learn
 cohere
 openai
-pymongo
+pymongo==3.13.0
