@@ -559,10 +559,17 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 # Embedding Model Initialization (Sayan's part)
 # Ye code embedding model load karta hai.
 # -----------------
+#@st.cache_resource
+#def load_embedding_model():
+    #return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', token=HF_API_KEY)
+    #return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 @st.cache_resource
 def load_embedding_model():
-    #return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', token=HF_API_KEY)
-    return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    try:
+        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    except Exception as e:
+        print(f"Error loading embedding model: {e}")
+        return None
 
 embedding_model = load_embedding_model()
 
