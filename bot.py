@@ -566,12 +566,18 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 @st.cache_resource
 def load_embedding_model():
     try:
-        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', token=HF_API_KEY)
     except Exception as e:
         print(f"Error loading embedding model: {e}")
         return None
+    
 
 embedding_model = load_embedding_model()
+
+#Debugging Step
+if embedding_model is None:
+    st.error("Failed to load the embedding model. Please check your HF API key or model name.")
+    st.stop()
 
 # -----------------
 # Helper Functions (Sayan's part)
