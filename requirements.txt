@@ -6,7 +6,7 @@ Authlib==1.5.1
  beautifulsoup4
  google-search-results
  serpapi
- sentence-transformers
+ sentence-transformers==2.7.0
  scikit-learn
  cohere
  openai
