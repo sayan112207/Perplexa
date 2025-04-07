@@ -6,6 +6,7 @@ numpy
 beautifulsoup4
 google-search-results
 serpapi
+transformers==4.49.0
 sentence-transformers==2.7.0
 scikit-learn
 cohere
