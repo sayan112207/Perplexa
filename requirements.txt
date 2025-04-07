@@ -11,3 +11,4 @@ scikit-learn
 cohere
 openai
 pymongo==3.13.0
+dnspython
