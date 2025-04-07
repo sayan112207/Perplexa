@@ -561,7 +561,8 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 # -----------------
 @st.cache_resource
 def load_embedding_model():
-    return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', token=HF_API_KEY)
+    #return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', token=HF_API_KEY)
+    return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 embedding_model = load_embedding_model()
 
