@@ -1,14 +1,14 @@
 Authlib==1.5.1
- streamlit==1.42.0
- requests
- python-dotenv
- numpy
- beautifulsoup4
- google-search-results
- serpapi
- sentence-transformers==2.7.0
- scikit-learn
- cohere
- openai
- pymongo==3.13.0
- dnspython==2.7.0
+streamlit==1.42.0
+requests
+python-dotenv
+numpy
+beautifulsoup4
+google-search-results
+serpapi
+sentence-transformers==2.7.0
+scikit-learn
+cohere
+openai
+pymongo[srv]
+
