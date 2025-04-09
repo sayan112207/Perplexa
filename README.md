@@ -1,161 +1,204 @@
 # Perplexa
 
-A smart web-searching AI with Retrieval Augmented Generation (RAG) system that provides AI-powered search capabilities. This project combines web scraping, semantic search, and language model generation to deliver comprehensive answers to user queries.
+Perplexa is an AI-powered search and chat application built using Streamlit, designed to intelligently answer user queries by leveraging retrieval-augmented generation (RAG). The app integrates multiple external APIs, performs real-time web scraping, calculates document-query similarity via sentence embeddings, and stores user data and chat history in a MongoDB database.
 
-## Features
+---
 
-- **Web Search Integration**: Scrapes search results from DuckDuckGo to gather relevant information
-- **Intelligent Query Processing**: Extracts optimal search keywords from user questions
-- **Content Validation**: Evaluates and filters search results for relevance
-- **Context-Aware Summarization**: Condenses web content into concise, useful information
-- **AI-Powered Responses**: Generates comprehensive, referenced answers using the Qwen2 language model
-- **Thai Language Support**: Processes and generates responses in Thai (configurable for other languages)
+## Table of Contents
 
-## Technology Stack
+1. [Overview](#overview)
+2. [Workflow and Functionality](#workflow-and-functionality)
+   - [User Authentication](#user-authentication)
+   - [Database Integration](#database-integration)
+   - [Embedding Model & Caching](#embedding-model--caching)
+   - [Retrieval Augmented Generation (RAG)](#retrieval-augmented-generation-rag)
+   - [Document Retrieval & top_k_documents](#document-retrieval--top_k_documents)
+   - [Model Selection and Supported Models](#model-selection-and-supported-models)
+3. [Deployment Process](#deployment-process)
+4. [Installation and Environment Variables](#installation-and-environment-variables)
+5. [How It Works: Detailed Code Walkthrough](#how-it-works-detailed-code-walkthrough)
+6. [Contributing and License](#contributing-and-license)
 
-- **Ollama**: Local AI model hosting and inference
-- **Qwen2 7B Instruct**: Compact yet powerful language model for generation tasks
-- **BeautifulSoup**: HTML parsing for web scraping
-- **Requests**: HTTP requests for data retrieval
-- **JSON**: Data format for structured information exchange
-- **Threading**: Concurrent operations for improved performance
+---
 
-## DataBase Used
-- Mongo DB
-  
-=======
-## Recent Updates
+## Overview
 
-### Optimized Perplexa Logo:
-- Integrated Base64 encoding for the logo to ensure faster loading and better image quality.
-- Removed dependency on external image files, improving efficiency.
+Perplexa uses a combination of natural language processing (NLP), web scraping, and cloud-based generative APIs to answer queries from users. It leverages a retrieval-augmented generation (RAG) approach – using web search results as context – to provide highly relevant responses and includes options to choose between several generative models.
 
-### CSS Enhancements:
-- Improved UI styling for better readability and responsiveness.
+---
 
-_Updated by **Patel**_
+## Workflow and Functionality
 
+### User Authentication
 
-## How It Works
+- **Login via Streamlit's Authentication:**  
+  The application uses a login mechanism (integrated via `st.login("auth0")`) to authenticate users. When a user first accesses the app, they are presented with a custom login page complete with a logo, headings, and a styled login button.  
+- **User Data Storage:**  
+  Once authenticated, user details such as the name, email, and picture are saved into a MongoDB collection using the `save_user_to_mongo(user)` function for further tracking and personalization.
 
-1. **Query Processing**: Analyzes the user question to extract optimal search keywords
-2. **Web Scraping**: Fetches relevant search results from DuckDuckGo
-3. **Content Validation**: Evaluates the usefulness of each search result
-4. **Summarization**: Extracts and condenses relevant information
-5. **Response Generation**: Creates a comprehensive, well-structured answer with citations
+### Database Integration
 
-## Setup and Installation
+- **MongoDB for Storing Users and Chats:**  
+  Perplexa uses MongoDB as its backend database. The MongoDB connection is established using a connection string (`MONGO_URI`), which is stored in the `.env` file and loaded via Python’s `dotenv` package.  
+- **Collections:**  
+  Two primary collections are used:  
+  - **users:** Stores user profile information.
+  - **chats:** Stores chat sessions with fields for the user email, chat title, and the conversation messages.
+- **Chat Operations:**  
+  The code includes helper functions to save, update, fetch, and delete chat sessions. For example, `save_chat_to_mongo()` updates an existing chat or creates a new chat session.
 
-1. Install dependencies:
+### Embedding Model & Caching
+
+- **Purpose of Sentence Transformer:**  
+  The application uses the `SentenceTransformer` model from Hugging Face (specifically, the `all-MiniLM-L6-v2` model) to generate vector embeddings for both user queries and fetched document texts. These embeddings enable the calculation of cosine similarity to rank and select the most relevant documents.
+- **Caching Strategy:**  
+  The model is loaded via Streamlit’s `@st.cache_resource` decorator. This caching ensures that the heavy-weight transformer model is loaded only once, thereby reducing latency and resource consumption on subsequent queries.
+
+### Retrieval Augmented Generation (RAG)
+
+- **What is RAG?**  
+  RAG stands for Retrieval Augmented Generation. It combines retrieval of relevant external documents with generative language models. In Perplexa, user queries are first used to retrieve context documents from the web.
+- **Why Use RAG:**  
+  The objective is to enrich the answer generation process by providing real-time, accurate context from external sources. The retrieved documents help the generative models produce more factually grounded and detailed responses.
+- **Workflow in Code:**  
+  1. The function `aggregate_documents(query)` calls `get_serpapi_results(query)` to perform a Google search.
+  2. It then fetches and extracts content from each URL.
+  3. The helper function `get_top_k_documents(query, documents, k=3)` computes embeddings for each document and compares them with the query embedding to select the top documents.
+  4. These top documents are then combined into a context for the prompt built by `build_rag_prompt()` before being sent to a selected generative API.
+
+### Document Retrieval & top_k_documents
+
+- **Purpose of `top_k_documents`:**  
+  This function is critical to filtering out the most relevant documents from the aggregated results. It computes cosine similarities between the query and document embeddings (generated by the SentenceTransformer) and selects the top *k* (default is 3) documents that best match the query.
+- **Retrieval Process:**  
+  1. Compute embeddings for all fetched documents.
+  2. Compute the embedding for the user query.
+  3. Calculate cosine similarities.
+  4. Sort the documents based on similarity scores and concatenate the content from the top matches to form the context.
+
+### Model Selection and Supported Models
+
+- **User-Selectable Models:**  
+  The application provides a sidebar selection for several generative models. Supported models include:
+  - **Gemini:** The primary generative API for responses.
+  - **Mistral:** Another option, using Mistral’s chat completions.
+  - **Command R+:** Using Cohere’s API for enhanced retrieval.
+  - **Deepseek R1, Phi 3, Nemotron, Meta Llama, Qwen 32B:** Options supported through the OpenRouter API.
+- **Why Provide Multiple Models:**  
+  Offering a range of models allows users to select based on performance, response style, cost, or specific capabilities. The app abstracts the API calls such that the correct endpoint and parameters are passed automatically based on the user’s choice.
+- **API Calls:**  
+  Each model has its own API call function (e.g., `call_gemini_api()`, `call_mistral_api()`, etc.) which standardizes the process of sending the final prompt with the combined context to the respective generative backend.
+
+---
+
+## Deployment Process
+
+- **Webhook-Triggered Deployment:**  
+  The Perplexa app is deployed on Streamlit Cloud. It is integrated with a GitHub App that uses SSL-secured webhooks to trigger deployments.  
+- **SSL Security:**  
+  Webhooks from GitHub are secured with SSL, ensuring that deployment triggers are transmitted securely between GitHub and Streamlit Cloud.
+- **Deployment Flow:**  
+  1. **Code Push:** Developers push new commits to the GitHub repository.
+  2. **GitHub Webhook:** A webhook call is sent to Streamlit Cloud whenever changes are pushed.
+  3. **Automatic Deployment:** Streamlit Cloud receives the webhook, pulls the latest commit, and deploys the updated app with a secure HTTPS connection.
+- **Environment Configuration:**  
+  Deployment also relies on environment variables (such as API keys and the MongoDB URI) being set correctly within the Streamlit Cloud environment for smooth integration with external services.
+
+---
+
+## Installation and Environment Variables
+
+### Installation Steps
+
+1. **Clone the Repository:**
    ```bash
-   pip install requests bs4 ollama retry
+   git clone https://github.com/sayan112207/Perplexa.git
+   cd Perplexa
    ```
 
-2. Install Ollama:
+2. **Install Dependencies:**
+   Ensure you have Python 3 installed. Then install required packages:
    ```bash
-   curl -fsSL https://ollama.com/install.sh | sh
+   pip install -r requirements.txt
    ```
 
-3. Pull the Qwen2 model:
+3. **Environment Setup:**
+   Create a `.env` file in the project root with the following keys (replace placeholder values with your actual keys):
+   ```env
+   MONGO_URI=your_mongodb_uri_here
+   SERPAPI_API_KEY=your_serpapi_key
+   GEMINI_API_KEY=your_gemini_api_key
+   MISTRAL_API_KEY=your_mistral_api_key
+   HF_API_KEY=your_huggingface_api_key
+   COMMAND_R_PLUS=your_command_r_plus_api_key
+   OPENROUTER_API_KEY=your_openrouter_api_key
+   ```
+   - **MONGO_URI:** Connection string to your MongoDB database.
+   - **SERPAPI_API_KEY:** API key for SerpApi to perform Google searches.
+   - **GEMINI_API_KEY, MISTRAL_API_KEY, COMMAND_R_PLUS, OPENROUTER_API_KEY:** API keys for the respective generative models.
+   - **HF_API_KEY:** API key for fetching Hugging Face resources like the sentence transformer.
+
+4. **Start the Application:**
+   Run the Streamlit app:
    ```bash
-   ollama pull qwen2:7b-instruct-q6_K
+   streamlit run bot.py
    ```
 
-4. Set environment variables:
-   ```bash
-   export OLLAMA_HOST=0.0.0.0:11434
-   export OLLAMA_ORIGINS=*
-   ```
+---
 
-5. Start the Ollama server:
-   ```bash
-   ollama serve
-   ```
+## How It Works: Detailed Code Walkthrough
 
-## Usage
+1. **Imports and Initialization:**
+   - Various libraries are imported including Streamlit, requests, BeautifulSoup (for web scraping), and several API clients.
+   - Tensor operations and caching mechanisms for the SentenceTransformer are set up, ensuring the embedding model is loaded only once.
 
-```python
-# Import the necessary components
-from perplexa import suplexity, display_answer
+2. **Page Configuration and Logo Rendering:**
+   - The page title, icon, and layout are set using `st.set_page_config()`.
+   - A helper function converts the logo image to a base64 string for efficient rendering in the UI.
 
-# Ask a question
-question = "What is JavaScript"
+3. **Database Setup:**
+   - The MongoDB connection is initialized using credentials from the `.env` file.
+   - Two collections, `users` and `chats`, are defined and helper functions are provided for CRUD operations.
 
-# Get a comprehensive answer
-response = suplexity(question)
-answer = display_answer(response)
-print(answer)
-```
-## Process Overview
-<img src="https://github.com/sayan112207/Perplexa/blob/main/perplexa-process.jpg?raw=true"/>
+4. **User Authentication:**
+   - The login page is rendered with custom HTML and CSS styling.
+   - Upon triggering the login (via query parameter), the authentication mechanism is activated.
+   - Authenticated user data is stored to MongoDB, and session details are maintained.
 
-## Architecture
+5. **Embedding Model & Caching:**
+   - The SentenceTransformer is loaded using the Hugging Face model `all-MiniLM-L6-v2` and is cached via `@st.cache_resource` to optimize performance.
+   - This model converts textual documents and queries into vector embeddings.
 
-This project implements a RAG (Retrieval Augmented Generation) architecture:
+6. **RAG and Document Processing:**
+   - **Document Aggregation:**  
+     The function `aggregate_documents(query)` uses SerpApi to perform a Google search and then retrieves article snippets and page contents using BeautifulSoup.
+   - **Similarity Calculation:**  
+     Function `get_top_k_documents(query, documents, k=3)` computes cosine similarity between query embeddings and document embeddings. It retrieves the top *k* documents to be used as context.
+   - **Prompt Building:**  
+     The final prompt is built by combining the user query, the top documents' context, and a reference list of URLs.
+   
+7. **Model Selection and API Calls:**
+   - Based on the user’s sidebar selection, the final prompt is dispatched to one of several API endpoints:
+     - **Gemini, Mistral, Command R+** use specific dedicated functions.
+     - **Other models (Deepseek R1, Phi 3, Nemotron, Meta Llama, Qwen 32B)** are handled via the OpenRouter API.
+   - The generative API returns an answer which is then appended to the session messages.
 
-1. **Retrieval**: Searches the web for relevant information
-2. **Augmentation**: Processes, filters, and contextualizes the retrieved information
-3. **Generation**: Uses a language model to create a comprehensive response
+8. **Chat Interface and History Management:**
+   - User messages are rendered in the chat window.
+   - New chats are initiated, existing chats are loaded from MongoDB, and a chat history mechanism allows users to resume or delete previous sessions.
+   - Changes to chat state automatically trigger page reruns to update the interface.
 
-## Workflow
-```mermaid
-graph TD;
-    User-enters-query-->Scraped-Web-Results;
-    Scraped-Web-Results-->Summarized-Results;
-    Summarized-Results-->Converted-into-vector-embeddings;
-    Converted-into-vector-embeddings-->Provide-Ollama-with-the-Vector-Document;
-    Provide-Ollama-with-the-Vector-Document-->Generated-answer-with-web-results-in-context;
-    Generated-answer-with-web-results-in-context-->Generated-Response-converted-into-standard-document;
-    Generated-Response-converted-into-standard-document-->Results
-```
+9. **People Also Ask:**
+   - After an answer is generated, the app also fetches related queries (using SerpApi’s “related questions” field) to encourage further exploration.
 
-# Perplexa Research
+10. **Custom Theming and Styling:**
+    - The application dynamically applies dark/light themes using custom CSS, enhancing the user experience.
 
-Perplexa Research Mode is an interactive research environment designed to streamline the process of fetching, processing, and querying academic content via [arxiv.org](http://arxiv.org/), it offers a modular, interactive, and highly extensible pipeline that leverages the latest advances in AI and Large Language Models (LLMs) to bring academic content to life.
+---
 
-## Perplexa Research Architectural Overview
-1. **Data Ingestion via arXiv**
-- **Purpose:** Retrieve academic papers and research content from the arXiv repository.
-- **How It Works:**
-  - The notebook leverages the [arxiv](https://pypi.org/project/arxiv/) package to search and download metadata and content of research papers.
-  - This component acts as the data source for the entire pipeline, feeding raw text data into subsequent modules.
+## Contributing and License
 
-2. **Indexing and Embedding with Llama Index Framework**
-- **Purpose:** Convert raw research documents into queryable data structures.
-- **How It Works:**
-  - Index Creation:
-    - Uses the Llama Index framework to build indices from ingested research content.
-    - These indices facilitate fast retrieval of relevant information when responding to queries.
-  - Embedding Generation:
-    - Extensions like llama-index-llms-mistralai and llama-index-embeddings-mistralai are employed to generate vector embeddings for document sections.
-    - This enables the system to perform semantic similarity searches and contextual matching based on natural language queries.
-
-3. **Query Processing and LLM Integration using [Mistral API](https://docs.mistral.ai/api/)**
-- **Purpose:** Allow users to query the indexed research data in natural language.
-- **How It Works:**
-  - Agent-Based Querying:
-    - The notebook sets up an agent layer that leverages LLMs to interpret and respond to user queries.
-    - The integration with various LLM backends (*Mistralai* via dedicated modules) ensures that responses are generated with up-to-date language understanding.
-  - Data Fusion:
-    - By combining indexed data with live LLM processing, the system produces answers that are both contextually informed and semantically rich.
-
-4. **Interactive UI with Gradio**
-- **Purpose:** Provide an accessible, web-based interface for exploring research queries.
-- **How It Works:**
-  - Interface Building:
-    - Using Gradio (version 3.39.0), the notebook launches a simple web interface.
-    - Users can type in queries and view results in real time.
-  - User Experience:
-    - The UI is designed to be intuitive, lowering the barrier for end users to interact with the model.
-
-
-## Future Improvements
-
-- Add support for more search engines
-- Add caching for frequently asked questions
-- Support for multiple languages
-- Add a web interface for easier access
-
-## License
-
-[MIT License](LICENSE)
+- **Contributing:**  
+  Contributions are welcome. Developers may fork the repository, make changes, and submit pull requests. Ensure clear commit messages and follow the established code style.
+- **License:**  
+  The project is released under the MIT License. Please refer to the [LICENSE](https://github.com/sayan112207/Perplexa/blob/main/LICENSE) file for details.
