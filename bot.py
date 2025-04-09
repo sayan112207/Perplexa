@@ -293,9 +293,20 @@ if st.session_state.chat_history.get(user_email, []):
         if col2.button("🗑️", key=f"delete_{idx}", help="Delete this chat"):
             if "_id" in session:
                 delete_chat_from_mongo(session["_id"])  # Remove from MongoDB
+                # Remove from local session state history
+                st.session_state.chat_history[user_email].pop(idx)
+
+                # If the current chat is the one being deleted
+                if st.session_state.current_chat_id == session["_id"] or st.session_state.current_chat_id is None:
+
+                    # Start a new chat automatically
+                    st.session_state.current_chat_id = None
+                    st.session_state.messages = [
+                        {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
+                    ]
             else:
                 print("Error: '_id' not found in session")
-            st.session_state.chat_history[user_email].pop(idx)
+            
             rerun()
 else:
     st.sidebar.write("No chat history yet.")
@@ -305,17 +316,58 @@ else:
 # Chat stored in Database (Satya's part)
 # Ye naya chat session shuru karta hai.
 # -----------------
+
+def is_same_chat(messages1, messages2):
+    return json.dumps(messages1, sort_keys=True) == json.dumps(messages2, sort_keys=True)
+
+
 with st.sidebar.container():
     st.markdown("<div id='new-chat-container'></div>", unsafe_allow_html=True)
     new_chat = st.button("➕", key="newchat", help="Start a new chat session")
     if new_chat:
+        # Only save if there's user activity
         if "messages" in st.session_state and len(st.session_state.messages) > 1:
-            first_question = next((msg["content"] for msg in st.session_state.messages if msg["role"] == "user"), "Chat Session")
-            save_chat_to_mongo(user_email,None , first_question, st.session_state.messages.copy())
-            st.session_state.chat_history[user_email].append({"title": first_question, "messages": st.session_state.messages.copy()})
+            first_question = next(
+                (msg["content"] for msg in st.session_state.messages if msg["role"] == "user"),
+                "Chat Session"
+            )
+
+            previous_chat_id = st.session_state.get("current_chat_id")
+            already_saved = False
+
+            # Check if the current chat already exists in the chat history
+            for chat in st.session_state.chat_history.get(user_email, []):
+                if chat["_id"] == previous_chat_id:
+                    # If the chat exists but messages have changed, update in DB
+                    if not is_same_chat(chat["messages"], st.session_state.messages):
+                        save_chat_to_mongo(user_email, previous_chat_id, None, st.session_state.messages)
+                        chat["messages"] = st.session_state.messages.copy()
+                    already_saved = True
+                    break
+
+            # If it's a fresh unsaved chat, save it
+            if not already_saved:
+                new_chat_id = save_chat_to_mongo(user_email, None, first_question, st.session_state.messages.copy())
+                st.session_state.chat_history[user_email].append({
+                    "_id": new_chat_id,
+                    "title": first_question,
+                    "messages": st.session_state.messages.copy()
+                })
+                previous_chat_id = new_chat_id
+
+            # Remove the old chat if required (to avoid duplication)
+            if previous_chat_id:
+                st.session_state.chat_history[user_email] = [
+                    chat for chat in st.session_state.chat_history[user_email]
+                    if chat["_id"] != previous_chat_id
+                ]
+                delete_chat_from_mongo(previous_chat_id)
+
+        # Reset everything for a new chat
         st.session_state.messages = [
             {"role": "assistant", "content": "Hello, I'm Perplexa. How can I help you today?"}
         ]
+        st.session_state.current_chat_id = None  # ✅ Important to reset
         rerun()
 
 
