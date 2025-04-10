@@ -3,15 +3,12 @@ import requests
 import os
 from app import get_serpapi_results, extract_content, call_gemini_api, call_mistral_api
 
-# Modify this based on your local or server setup
-#Things to Change:
-#Modify BASE_URL = "http://localhost:5500" if your API runs on a different port.
 BASE_URL = "http://localhost:5500"
 
 # Mock Environment Variables
-os.environ['95c27147fbae9f979cf223fa5056bac07fb569d715890e60a3ffb14679706e3d'] = 'test_serpapi_key'
-os.environ['AIzaSyDIG2W0bWqDxlvA3NtVFEHBdHN_SXC4cbU'] = 'test_gemini_key'
-os.environ['A1T47NIMVRMmt7aXpQDNvXxOyyaKFj99'] = 'test_mistral_key'
+os.environ['SERPAPI_API_KEY'] = 'test_serpapi_key'
+os.environ['GEMINI_API_KEY'] = 'test_gemini_key'
+os.environ['MISTRAL_API_KEY'] = 'test_mistral_key'
 
 def test_get_serpapi_results(mocker):
     """Test SERPAPI search functionality"""
