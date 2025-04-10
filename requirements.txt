@@ -12,6 +12,3 @@ cohere
 openai
 pymongo
 bson
-pytest
-selenium
-locust
