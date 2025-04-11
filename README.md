@@ -1,4 +1,4 @@
-# Perplexa
+# Perplexa <img src="https://github.com/sayan112207/Perplexa/blob/main/perplexa_logo.png?raw=true" alt="Perplexa Logo" width="20"/>
 
 Perplexa is an AI-powered search and chat application built using Streamlit, designed to intelligently answer user queries by leveraging retrieval-augmented generation (RAG). The app integrates multiple external APIs, performs real-time web scraping, calculates document-query similarity via sentence embeddings, and stores user data and chat history in a MongoDB database.
 
