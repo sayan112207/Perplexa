@@ -7,23 +7,84 @@ Perplexa is an AI-powered search and chat application built using Streamlit, des
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Workflow and Functionality](#workflow-and-functionality)
+2. [Architecture & Performance](#architecture--performance)
+3. [Workflow and Functionality](#workflow-and-functionality)
    - [User Authentication](#user-authentication)
    - [Database Integration](#database-integration)
    - [Embedding Model & Caching](#embedding-model--caching)
    - [Retrieval Augmented Generation (RAG)](#retrieval-augmented-generation-rag)
    - [Document Retrieval & top_k_documents](#document-retrieval--top_k_documents)
    - [Model Selection and Supported Models](#model-selection-and-supported-models)
-3. [Deployment Process](#deployment-process)
-4. [Installation and Environment Variables](#installation-and-environment-variables)
-5. [How It Works: Detailed Code Walkthrough](#how-it-works-detailed-code-walkthrough)
-6. [Contributing and License](#contributing-and-license)
+4. [Deployment Process](#deployment-process)
+5. [Installation and Environment Variables](#installation-and-environment-variables)
+6. [How It Works: Detailed Code Walkthrough](#how-it-works-detailed-code-walkthrough)
+7. [API Documentation](#api-documentation)
+8. [Contributing and License](#contributing-and-license)
 
 ---
 
 ## Overview
 
 Perplexa uses a combination of natural language processing (NLP), web scraping, and cloud-based generative APIs to answer queries from users. It leverages a retrieval-augmented generation (RAG) approach – using web search results as context – to provide highly relevant responses and includes options to choose between several generative models.
+
+---
+
+## Architecture & Performance
+
+### Quick Architecture Overview (30 Seconds)
+
+```
+USER QUERY → [Search (SerpAPI) + Web Scraping] → [Embedding + Top-K Selection] 
+→ [LLM Generation (Gemini/Mistral/etc.)] → [Streamlit UI + MongoDB Storage] → RESPONSE
+```
+
+**Data Flow:**
+1. **Retrieval**: User query triggers Google search via SerpAPI → Fetch top 5 URLs → Extract content with BeautifulSoup
+2. **Inference**: Generate embeddings using SentenceTransformer (all-MiniLM-L6-v2) → Calculate cosine similarity → Select top 3 most relevant documents
+3. **Serving**: Build RAG prompt with context → Call selected LLM API (Gemini/Mistral/Command R+/OpenRouter) → Display response in Streamlit UI
+
+### Key Performance Metrics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **P95 Latency** | ~20-25s | Full query processing including web scraping |
+| **Cost/Request** | $0.005-0.015 | SerpAPI + LLM API + MongoDB costs |
+| **Context Retrieval** | Top-3 of 5 docs | Cosine similarity-based selection |
+| **Embedding Speed** | ~100-200ms | Cached SentenceTransformer model |
+
+### Infrastructure & Tools
+
+**Cloud Services:**
+- **Hosting**: Streamlit Cloud (webhook-based auto-deployment)
+- **Database**: MongoDB Atlas (TLS-enabled)
+- **Authentication**: Auth0 (via Streamlit)
+- **APIs**: SerpAPI, Google Gemini, Mistral AI, Cohere, OpenRouter, Hugging Face
+
+**CI/CD & MLOps:**
+- **Version Control**: GitHub with automatic deployment on push
+- **Dependency Scanning**: GitHub Actions (dependency-review.yml)
+- **Model Caching**: `@st.cache_resource` for SentenceTransformer
+- **Load Testing**: Locust (see `tests/lucustfile.py`)
+- **Monitoring**: Streamlit Cloud logs + try-catch error handling
+
+### Common Issues & Fixes (Postmortem Notes)
+
+**Issue**: Model loading timeout on startup  
+**Fix**: Implemented `@st.cache_resource` caching and HF token authentication
+
+**Issue**: API rate limiting during high traffic  
+**Fix**: Added try-catch blocks with user-friendly error messages and model fallbacks
+
+**Issue**: MongoDB TLS certificate errors  
+**Fix**: Set `tlsAllowInvalidCertificates=True` for self-signed certificates
+
+**Issue**: Web scraping timeouts  
+**Fix**: Added 5-second timeout with fallback to SerpAPI snippets
+
+**Issue**: PyTorch `__path__._path` runtime error  
+**Fix**: Added `torch.classes.__path__ = []` workaround
+
+For comprehensive API documentation, performance analysis, and troubleshooting, see **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)**.
 
 ---
 
@@ -193,6 +254,48 @@ Perplexa uses a combination of natural language processing (NLP), web scraping, 
 
 10. **Custom Theming and Styling:**
     - The application dynamically applies dark/light themes using custom CSS, enhancing the user experience.
+
+---
+
+## API Documentation
+
+For comprehensive API documentation including:
+- **Detailed Architecture Diagrams**: Complete data flow from retrieval to serving
+- **Performance Metrics**: Latency (P50/P95/P99), cost per request, quality metrics
+- **API Endpoints**: All internal functions and external API integrations
+- **Cloud Infrastructure**: Tools, services, and configuration details
+- **CI/CD & MLOps**: Deployment pipeline, monitoring, and best practices
+- **Postmortem Notes**: Common issues, root causes, and fixes applied
+- **Testing Alternatives**: Locust, pytest, and manual API testing guides
+- **Troubleshooting**: Debug mode, commands, and security considerations
+
+Please refer to **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** for complete details.
+
+### Quick API Reference
+
+**Core Functions:**
+- `aggregate_documents(query)` - Fetch and aggregate web search results
+- `get_top_k_documents(query, documents, k=3)` - Semantic similarity-based document selection
+- `build_rag_prompt(query, context, references)` - Construct LLM prompt with citations
+- `call_gemini_api(prompt)` - Generate response using Google Gemini
+- `call_mistral_api(prompt)` - Generate response using Mistral AI
+- `call_cmd_r_plus(prompt)` - Generate response using Cohere Command R+
+- `call_openrouter_api(prompt, model)` - Generate response using OpenRouter (multi-model)
+
+**Database Functions:**
+- `save_user_to_mongo(user)` - Save/update user profile
+- `load_chats_from_mongo(user_email)` - Load chat history
+- `save_chat_to_mongo(user_email, chat_id, title, messages)` - Save chat session
+- `delete_chat_from_mongo(chat_id)` - Delete chat session
+
+**Testing:**
+```bash
+# Load testing with Locust
+locust -f tests/lucustfile.py --host=http://localhost:8501
+
+# Run unit tests
+pytest tests/
+```
 
 ---
 
