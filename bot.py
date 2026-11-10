@@ -99,6 +99,10 @@ def delete_chat_from_mongo(chat_id):
 # -----------------
 
 def authenticate_user():
+    # dev mode to bypass authentication
+    if os.getenv('DEV_MODE') == '1':
+        st.sidebar.warning("DEV MODE: login disabled")
+        return {"name": "Dev User", "email": "dev@example.com", "picture": None}
     user = getattr(st, "experimental_user", None)
     
     if not user or not getattr(user, "name", None):
