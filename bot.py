@@ -606,6 +606,7 @@ MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
 HF_API_KEY = os.getenv('HF_API_KEY')
 COMMAND_R_PLUS_API_KEY = os.getenv('COMMAND_R_PLUS')
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.8-flash')
 
 # -----------------
 # Embedding Model Initialization (Sayan's part)
@@ -701,9 +702,9 @@ def build_rag_prompt(query, context, references):
 
 def call_gemini_api(prompt):
     data = {"contents": [{"parts": [{"text": prompt}]}]}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
     try:
-        response = requests.post(url, headers={"Content-Type": "application/json"}, data=json.dumps(data))
+        response = requests.post(url, headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY}, data=json.dumps(data))
         response.raise_for_status()
         answer = (response.json().get("candidates", [{}])[0]
                   .get("content", {})
@@ -793,6 +794,8 @@ def generate_people_also_ask(query):
 def is_greeting(message):
     prompt = f"Check if the following message is a greeting and always answer in True or False: '{message}'"
     response = call_gemini_api(prompt)
+    if response is None:
+        return False
     return response.strip().lower() == "true"
 
 # Function to generate a greeting response using the Gemini API
