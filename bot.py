@@ -686,7 +686,8 @@ def get_top_k_documents(query, documents, k=3):
     similarities = cosine_similarity([query_embedding], doc_embeddings)[0]
     top_indices = np.argsort(similarities)[::-1][:k]
     top_docs = [documents[i]["content"] for i in top_indices]
-    return {"context": "\n\n".join(top_docs)}
+    top_urls = [documents[i]["url"] for i in top_indices if documents[i]["url"]]
+    return {"context": "\n\n".join(top_docs), "urls": top_urls}
 
 def build_rag_prompt(query, context, references):
     refs_formatted = "\n".join(f"- {ref}" for ref in references)
@@ -847,7 +848,7 @@ if st.session_state.messages[-1]["role"] == "user":
         rag_results = get_top_k_documents(query, documents, k=3)
     if rag_results:
         context = rag_results["context"]
-        final_prompt = build_rag_prompt(query, context, fetched_urls)
+        final_prompt = build_rag_prompt(query, context, rag_results["urls"])
         with st.spinner("Generating answer..."):  # Ye answer generate karta hai.
             if model_choice.lower() == 'gemini':
                 answer = call_gemini_api(final_prompt)
