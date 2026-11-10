@@ -99,6 +99,13 @@ def delete_chat_from_mongo(chat_id):
 # -----------------
 
 def authenticate_user():
+    # dev mode to bypass authentication (local development only)
+    if os.getenv('DEV_MODE') == '1':
+        if st.get_option("server.address") not in ("localhost", "127.0.0.1"):
+            st.error("DEV_MODE only works when the server listens on localhost. Run: streamlit run bot.py --server.address localhost")
+            st.stop()
+        st.sidebar.warning("DEV MODE: login disabled")
+        return {"name": "Dev User", "email": os.getenv('DEV_USER_EMAIL', 'dev@example.com'), "picture": None}
     user = getattr(st, "experimental_user", None)
     
     if not user or not getattr(user, "name", None):
