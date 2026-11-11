@@ -184,7 +184,7 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
    ```
 
 3. **Environment Setup:**
-   Create a `.env` file in the project root with the following keys (replace placeholder values with your actual keys):
+    Create a `.env` file in the project root (you can copy `.env.example` as a starting point) with the following keys (replace placeholder values with your actual keys):
    ```env
    MONGO_URI=your_mongodb_uri_here
    SERPAPI_API_KEY=your_serpapi_key
@@ -193,17 +193,46 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
    HF_API_KEY=your_huggingface_api_key
    COMMAND_R_PLUS=your_command_r_plus_api_key
    OPENROUTER_API_KEY=your_openrouter_api_key
+   GEMINI_MODEL=gemini-3.8-flash
    ```
    - **MONGO_URI:** Connection string to your MongoDB database.
    - **SERPAPI_API_KEY:** API key for SerpApi to perform Google searches.
    - **GEMINI_API_KEY, MISTRAL_API_KEY, COMMAND_R_PLUS, OPENROUTER_API_KEY:** API keys for the respective generative models.
    - **HF_API_KEY:** API key for fetching Hugging Face resources like the sentence transformer.
+   - **GEMINI_MODEL:** (optional) Gemini model name. Defaults to `gemini-3.8-flash`; change it if a model is retired.
+   - **DEV_MODE, DEV_USER_EMAIL:** (optional) for running without Auth0, see "Development Mode" below.
 
 4. **Start the Application:**
    Run the Streamlit app:
    ```bash
    streamlit run bot.py
    ```
+
+### Development Mode (run without Auth0)
+
+  Login uses Auth0, with credentials in `.streamlit/secrets.toml`. To run the app locally without those credentials, set `DEV_MODE=1` in your `.env` and start Streamlit bound to localhost:
+
+    ```bash
+    streamlit run bot.py --server.address localhost
+    ```
+
+  Dev mode skips login and uses a fake user (`DEV_USER_EMAIL`, default `dev@example.com`). It refuses to start unless the server listens on localhost, shows a warning in the sidebar, and must **never** be enabled on a deployed app. MongoDB is still required for chat history.
+
+  ### Running with Docker (optional)
+
+  Docker is an alternative way to run the app; the steps above still work without it.
+
+    ```bash
+    docker build -t perplexa .
+    docker run --rm --env-file .env -e DEV_MODE=0 -p 127.0.0.1:8501:8501 perplexa
+    ```
+
+  Then open http://localhost:8501.
+
+  - `.env` and `.streamlit/secrets.toml` are excluded from the image by `.dockerignore`. Do not push the image to a public registry.
+  - Auth0 credentials must be provided to the container at run time. `DEV_MODE=1` is not supported inside the container (Streamlit must listen on 0.0.0.0 there), so use dev mode without Docker.
+  - `--env-file` keeps quotes and inline comments literally, so write values as `KEY=value` with nothing after them.
+  - The image uses CPU-only PyTorch (about 1.9 GB). The embedding model is downloaded on first start.
 
 ---
 

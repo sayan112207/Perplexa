@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+secrets.toml
+.streamlit/secrets.toml
+env/
+venv/
+__pycache__/
+.git/
+.ipynb_checkpoints/
