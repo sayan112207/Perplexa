@@ -250,7 +250,7 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
 
     ```bash
     docker build -t perplexa .
-    docker run --rm --env-file .env -e DEV_MODE=0 -p 127.0.0.1:8501:8501 perplexa
+    docker run --rm --env-file .env -e DEV_MODE=0 -p 127.0.0.1:8501:8501 -v "$(pwd)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro" perplexa
     ```
 
   Then open http://localhost:8501.
