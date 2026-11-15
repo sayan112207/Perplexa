@@ -218,6 +218,32 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
 
   Dev mode skips login and uses a fake user (`DEV_USER_EMAIL`, default `dev@example.com`). It refuses to start unless the server listens on localhost, shows a warning in the sidebar, and must **never** be enabled on a deployed app. MongoDB is still required for chat history.
 
+  ### Auth0 setup (to use login)
+
+    1. Create a free Auth0 account and an application of type **Regular Web Application**.
+    2. On the application's **Settings** tab, copy the **Domain**, **Client ID** and **Client Secret**. Under **Allowed Callback URLs** add `http://localhost:8501/oauth2callback`, and under **Allowed Logout URLs** add `http://localhost:8501`. Then click **Save Changes**.
+    3. Generate a random cookie secret:
+
+      ```bash
+      python -c "import secrets; print(secrets.token_hex(32))"
+      ```
+
+    4. Create `.streamlit/secrets.toml` (never commit this file):
+
+      ```toml
+      [auth]
+      redirect_uri = "http://localhost:8501/oauth2callback"
+      cookie_secret = "<the generated string>"
+
+      [auth.auth0]
+      domain = "your-tenant.us.auth0.com"
+      client_id = "your_client_id"
+      client_secret = "your_client_secret"
+      server_metadata_url = "https://your-tenant.us.auth0.com/.well-known/openid-configuration"
+      ```
+
+      5. Run `streamlit run bot.py` (with `DEV_MODE` unset or `0`) and click the login button. You can sign up with an email and password.
+
   ### Running with Docker (optional)
 
   Docker is an alternative way to run the app; the steps above still work without it.
@@ -230,7 +256,11 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
   Then open http://localhost:8501.
 
   - `.env` and `.streamlit/secrets.toml` are excluded from the image by `.dockerignore`. Do not push the image to a public registry.
-  - Auth0 credentials must be provided to the container at run time. `DEV_MODE=1` is not supported inside the container (Streamlit must listen on 0.0.0.0 there), so use dev mode without Docker.
+  - Auth0 credentials are provided at run time by mounting your `secrets.toml` (it is not in the image). Example (Git Bash on Windows; adjust the path syntax for your shell):
+
+        MSYS_NO_PATHCONV=1 docker run --rm --env-file .env -e DEV_MODE=0 -v "$(pwd -W)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro" -p 127.0.0.1:8501:8501 perplexa
+      
+  - `DEV_MODE=1` is not supported inside the container (Streamlit must listen on 0.0.0.0 there), so use dev mode without Docker.
   - `--env-file` keeps quotes and inline comments literally, so write values as `KEY=value` with nothing after them.
   - The image uses CPU-only PyTorch (about 1.9 GB). The embedding model is downloaded on first start.
 
