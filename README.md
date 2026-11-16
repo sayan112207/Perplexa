@@ -210,59 +210,62 @@ For comprehensive API documentation, performance analysis, and troubleshooting, 
 
 ### Development Mode (run without Auth0)
 
-  Login uses Auth0, with credentials in `.streamlit/secrets.toml`. To run the app locally without those credentials, set `DEV_MODE=1` in your `.env` and start Streamlit bound to localhost:
+Login uses Auth0, with credentials in `.streamlit/secrets.toml`. To run the app locally without those credentials, set `DEV_MODE=1` in your `.env` and start Streamlit bound to localhost:
 
-    ```bash
-    streamlit run bot.py --server.address localhost
-    ```
+```bash
+streamlit run bot.py --server.address localhost
+```
 
-  Dev mode skips login and uses a fake user (`DEV_USER_EMAIL`, default `dev@example.com`). It refuses to start unless the server listens on localhost, shows a warning in the sidebar, and must **never** be enabled on a deployed app. MongoDB is still required for chat history.
+Dev mode skips login and uses a fake user (`DEV_USER_EMAIL`, default `dev@example.com`). It refuses to start unless the server listens on localhost, shows a warning in the sidebar, and must **never** be enabled on a deployed app. MongoDB is still required for chat history.
 
-  ### Auth0 setup (to use login)
+### Auth0 setup (to use login)
 
-    1. Create a free Auth0 account and an application of type **Regular Web Application**.
-    2. On the application's **Settings** tab, copy the **Domain**, **Client ID** and **Client Secret**. Under **Allowed Callback URLs** add `http://localhost:8501/oauth2callback`, and under **Allowed Logout URLs** add `http://localhost:8501`. Then click **Save Changes**.
-    3. Generate a random cookie secret:
+1. Create a free Auth0 account and an application of type **Regular Web Application**.
+2. On the application's **Settings** tab, copy the **Domain**, **Client ID** and **Client Secret**. Under **Allowed Callback URLs** add `http://localhost:8501/oauth2callback`, and under **Allowed Logout URLs** add `http://localhost:8501`. Then click **Save Changes**.
+3. Generate a random cookie secret:
 
-      ```bash
-      python -c "import secrets; print(secrets.token_hex(32))"
-      ```
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
 
-    4. Create `.streamlit/secrets.toml` (never commit this file):
+4. Create `.streamlit/secrets.toml` (never commit this file):
 
-      ```toml
-      [auth]
-      redirect_uri = "http://localhost:8501/oauth2callback"
-      cookie_secret = "<the generated string>"
+   ```toml
+   [auth]
+   redirect_uri = "http://localhost:8501/oauth2callback"
+   cookie_secret = "<the generated string>"
 
-      [auth.auth0]
-      domain = "your-tenant.us.auth0.com"
-      client_id = "your_client_id"
-      client_secret = "your_client_secret"
-      server_metadata_url = "https://your-tenant.us.auth0.com/.well-known/openid-configuration"
-      ```
+   [auth.auth0]
+   domain = "your-tenant.us.auth0.com"
+   client_id = "your_client_id"
+   client_secret = "your_client_secret"
+   server_metadata_url = "https://your-tenant.us.auth0.com/.well-known/openid-configuration"
+   ```
 
-      5. Run `streamlit run bot.py` (with `DEV_MODE` unset or `0`) and click the login button. You can sign up with an email and password.
+5. Run `streamlit run bot.py` (with `DEV_MODE` unset or `0`) and click the login button. You can sign up with an email and password.
 
-  ### Running with Docker (optional)
+### Running with Docker (optional)
 
-  Docker is an alternative way to run the app; the steps above still work without it.
+Docker is an alternative way to run the app; the steps above still work without it.
 
-    ```bash
-    docker build -t perplexa .
-    docker run --rm --env-file .env -e DEV_MODE=0 -p 127.0.0.1:8501:8501 -v "$(pwd)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro" perplexa
-    ```
+```bash
+docker build -t perplexa .
+docker run --rm --env-file .env -e DEV_MODE=0 -p 127.0.0.1:8501:8501 perplexa
+```
 
-  Then open http://localhost:8501.
+Then open http://localhost:8501 (not the `http://0.0.0.0:8501` address printed in the container log).
 
-  - `.env` and `.streamlit/secrets.toml` are excluded from the image by `.dockerignore`. Do not push the image to a public registry.
-  - Auth0 credentials are provided at run time by mounting your `secrets.toml` (it is not in the image). Example (Git Bash on Windows; adjust the path syntax for your shell):
+- `.env` and `.streamlit/secrets.toml` are excluded from the image by `.dockerignore`. Do not push the image to a public registry.
+- `DEV_MODE=1` is not supported inside the container (Streamlit must listen on 0.0.0.0 there), so use dev mode without Docker.
+- To use Auth0 login, mount your `secrets.toml` at run time (it is not in the image). Example for Git Bash on Windows; adjust the path syntax for your shell:
 
-        MSYS_NO_PATHCONV=1 docker run --rm --env-file .env -e DEV_MODE=0 -v "$(pwd -W)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro" -p 127.0.0.1:8501:8501 perplexa
-      
-  - `DEV_MODE=1` is not supported inside the container (Streamlit must listen on 0.0.0.0 there), so use dev mode without Docker.
-  - `--env-file` keeps quotes and inline comments literally, so write values as `KEY=value` with nothing after them.
-  - The image uses CPU-only PyTorch (about 1.9 GB). The embedding model is downloaded on first start.
+
+  ```bash
+  MSYS_NO_PATHCONV=1 docker run --rm --env-file .env -e DEV_MODE=0 -v "$(pwd -W)/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro" -p 127.0.0.1:8501:8501 perplexa
+  ```
+
+- `--env-file` keeps quotes and inline comments literally, so write values as `KEY=value` with nothing after them.
+- The image uses CPU-only PyTorch (about 1.9 GB). The embedding model is downloaded on first start.
 
 ---
 
